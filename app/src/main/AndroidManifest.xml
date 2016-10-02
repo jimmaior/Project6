@@ -31,7 +31,7 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
 
-    <!-- Permissions required for Android Wearables-->
+    <!-- Permissions required for Android Wearables -->
     <uses-permission android:name="com.google.android.permission.PROVIDE_BACKGROUND" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
@@ -120,6 +120,7 @@
             <intent-filter>
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
                 <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
+
                 <category android:name="com.example.android.sunshine.app" />
             </intent-filter>
         </receiver>
@@ -133,6 +134,7 @@
             <intent-filter>
                 <action android:name="com.google.android.apps.muzei.api.MuzeiArtSource" />
             </intent-filter>
+
             <meta-data
                 android:name="color"
                 android:value="@color/primary" />
@@ -190,14 +192,10 @@
         </service>
         <service
             android:name=".gcm.RegistrationIntentService"
-            android:exported="false">
-        </service>
-
+            android:exported="false"></service>
         <service
             android:name=".wearable.WearableDataLayerService"
-            android:exported="false">
-        </service>
-
+            android:exported="false"></service>
     </application>
 
 </manifest>
