@@ -2,9 +2,9 @@ package com.example.android.sunshine.app.wearable;
 
 import android.app.Service;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -15,16 +15,16 @@ import android.widget.Toast;
 
 
 import com.example.android.sunshine.app.Utility;
+import com.example.android.sunshine.app.data.WeatherContract;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.wearable.Asset;
 import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
-import java.io.ByteArrayOutputStream;
+import java.util.Random;
 
 public class WearableDataLayerService extends Service implements
         GoogleApiClient.ConnectionCallbacks,
@@ -65,8 +65,6 @@ public class WearableDataLayerService extends Service implements
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "onStartCommand");
         handleCommand(intent);
-        // We want this service to continue running until it is explicitly
-        // stopped, so return sticky.
         return START_NOT_STICKY;
     }
 
@@ -81,12 +79,10 @@ public class WearableDataLayerService extends Service implements
         Log.d(TAG, "onConnected: " + connectionHint);
         // Now you can use the Data Layer API
         getDataFromProvider();
-        syncWeatherData();
+        sendWeatherDataToDataLayer();
         // get the min, max temp, icon from teh content provider
         // send the data to the data service
 
-        // terminate the service
-        stopSelf();
     }
 
     @Override
@@ -111,34 +107,77 @@ public class WearableDataLayerService extends Service implements
 
     private void getDataFromProvider() {
         // TODO: get data from provider
-        mHighTemp = "85";
-        mLowTemp = "70";
-        mWeatherId = 800;
-        int resource = Utility.getIconResourceForWeatherCondition(800);
-        mWeatherConditionBitmap = BitmapFactory.decodeResource(getResources(), resource);
+
+        String[] forecastCols = {
+                WeatherContract.WeatherEntry.TABLE_NAME + "." + WeatherContract.WeatherEntry._ID,
+                WeatherContract.WeatherEntry.COLUMN_DATE,
+                WeatherContract.WeatherEntry.COLUMN_SHORT_DESC,
+                WeatherContract.WeatherEntry.COLUMN_MAX_TEMP,
+                WeatherContract.WeatherEntry.COLUMN_MIN_TEMP,
+                WeatherContract.LocationEntry.COLUMN_LOCATION_SETTING,
+                WeatherContract.WeatherEntry.COLUMN_WEATHER_ID,
+                WeatherContract.LocationEntry.COLUMN_COORD_LAT,
+                WeatherContract.LocationEntry.COLUMN_COORD_LONG
+        };
+
+        String location = Utility.getPreferredLocation(this);
+        Uri weatherForLocationUri = WeatherContract.WeatherEntry.buildWeatherLocationWithStartDate(
+                location, System.currentTimeMillis());
+        Cursor cursor = getContentResolver().query(weatherForLocationUri, forecastCols, null,
+                null, WeatherContract.WeatherEntry.COLUMN_DATE + " ASC");
+        // debug cursor
+        cursor.moveToLast();
+        Log.d(TAG, DatabaseUtils.dumpCurrentRowToString(cursor));
+
+        if (cursor != null) {
+//            cursor.moveToLast();
+//            double low = cursor.getDouble(4);
+//            String lowString = Utility.formatTemperature(getApplicationContext(), low);
+//            mLowTemp = lowString;
+//
+//            double high = cursor.getDouble(3);
+//            String highString = Utility.formatTemperature(getApplicationContext(), high);
+//            mHighTemp = highString;
+//
+//            int weatherId = cursor.getInt(6);
+//            mWeatherId = weatherId;
+//
+//            int resource = Utility.getIconResourceForWeatherCondition(weatherId);
+//            mWeatherConditionBitmap = BitmapFactory.decodeResource(getResources(), resource);
+
+            cursor.close();
+        }
+
+        mHighTemp = randomTemp();
+        mLowTemp = randomTemp();
+        mWeatherId = randomId();
+  }
+
+    private String randomTemp() {
+        Random randomGenerator = new Random();
+        return String.valueOf(randomGenerator.nextInt(100));
     }
 
-    private void syncWeatherData() {
+    private int randomId() {
+        Random randomGenerator = new Random();
+        return randomGenerator.nextInt(1000);
+    }
+
+    private void sendWeatherDataToDataLayer() {
+        Log.d(TAG, "sendWeatherDataToDataLayer()");
         DataMap dataMap = new DataMap();
-        // todo: defensive programming
-        Asset bmpAsset = createAssetFromBitmap(mWeatherConditionBitmap);
-        dataMap.putAsset("weather_icon", bmpAsset);
+        dataMap.putInt("weather_icon", mWeatherId );
         dataMap.putString("low_temp", mLowTemp);
         dataMap.putString("high_temp", mHighTemp);
-        new SendToDataLayerThread(dataMap).start();
+        new syncWeatherConditionChange(dataMap).start();
     }
 
-    private static Asset createAssetFromBitmap(Bitmap bitmap) {
-        final ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteStream);
-        return Asset.createFromBytes(byteStream.toByteArray());
-    }
 
     // TODO: Rename
-    private class SendToDataLayerThread extends Thread {
+    private class syncWeatherConditionChange extends Thread {
         DataMap mDataMap;
 
-        SendToDataLayerThread(DataMap dataMap) {
+        syncWeatherConditionChange(DataMap dataMap) {
             mDataMap = dataMap;
         }
 
@@ -150,12 +189,15 @@ public class WearableDataLayerService extends Service implements
             DataApi.DataItemResult result =
                     Wearable.DataApi.putDataItem(mGoogleApiClient, request).await();
             if (result.getStatus().isSuccess()) {
-                Log.d(TAG, "DataMap: " + mDataMap + " sent successfully to data layer ");
+                Log.d(TAG, "Weather update:" + mDataMap + " is successful");
             }
             else {
                 // Log an error
-                Log.d(TAG, "ERROR: failed to send DataMap to data layer");
+                Log.d(TAG, "ERROR: failed to send weather update to Wearable data layer");
             }
+            // terminate the service
+            stopSelf();
         }
+
     }
 }

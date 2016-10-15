@@ -26,6 +26,7 @@
             <meta-data
                 android:name="com.google.android.wearable.watchface.preview_circular"
                 android:resource="@drawable/preview_circular" />
+
             <intent-filter>
                 <action android:name="android.service.wallpaper.WallpaperService" />
                 <category android:name="com.google.android.wearable.watchface.category.WATCH_FACE" />
@@ -35,6 +36,18 @@
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
+
+        <service
+            android:name=".SunshineDataListenerService"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <data android:scheme="wear" android:host="*" android:pathPrefix="/weather_data" />
+                <!-- http://android-developers.blogspot.com/2016/04/deprecation-of-bindlistener.html -->
+ ~               <!--action android:name="com.google.android.gms.wearable.BIND_LISTENER" />-->
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

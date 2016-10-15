@@ -141,6 +141,11 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
             startActivity(new Intent(this, SettingsActivity.class));
             return true;
         }
+        // TODO JimM Remove
+        if (id == R.id.update_data) {
+            updateWearable();
+            return true;
+        }
 
         return super.onOptionsItemSelected(item);
     }
