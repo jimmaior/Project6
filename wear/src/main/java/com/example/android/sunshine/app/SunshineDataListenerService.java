@@ -54,20 +54,8 @@ public class SunshineDataListenerService extends WearableListenerService {
 
                 Intent messageIntent = new Intent();
                 messageIntent.setAction("com.example.android.sunshine.app.INTENT");
-                messageIntent.putExtra("datamap", dataMap.toBundle());
                 LocalBroadcastManager.getInstance(this).sendBroadcast(messageIntent);
             }
         }
     }
-
-//    private void setWeatherConditions() {
-//        Log.d(TAG, "setWeatherConditions");
-//        SharedPreferences sharedPrefs = PreferenceManager
-//                .getDefaultSharedPreferences(this);
-//        sharedPrefs.edit()
-//                .putString("high_temp", randomTemp())
-//                .putString("low_temp", randomTemp())
-//                .putInt("weather_id", randomId())
-//                .apply();
-//    }
 }

@@ -33,8 +33,7 @@ import java.util.TimeZone;
 
 public class SunshineWatchFace implements
         GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener,
-        SharedPreferences.OnSharedPreferenceChangeListener {
+        GoogleApiClient.OnConnectionFailedListener {
 
     private static final String TAG = SunshineWatchFace.class.getSimpleName();
 
@@ -89,9 +88,7 @@ public class SunshineWatchFace implements
         mAppResources = context.getResources();
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 
-        mSharedPreferences.registerOnSharedPreferenceChangeListener(this);
-
-       /* client for retrieving synch data from the Wearable Data Layer */
+       /* client for Wearable Data Layer */
         mGoogleApiClient = new GoogleApiClient.Builder(context)
                 .addApi(Wearable.API)
                 .addConnectionCallbacks(this)
@@ -124,28 +121,19 @@ public class SunshineWatchFace implements
         mWeatherIcon = BitmapFactory
                 .decodeResource(mAppResources,
                         getIconResourceForWeatherCondition(mWeatherId) );
-
         if (mWeatherIcon != null) {
             // icon
             float iconXOffset = calcIconXOffset(mWeatherIcon, bounds);
             float iconYOffset = calcIconYOffset(mWeatherIcon, bounds);
             canvas.drawBitmap(mWeatherIcon, iconXOffset, iconYOffset, null);
 
-            // TODO High Temp
             float highTempXOffset = calcHighTempXOffset(mWeatherIcon, mHighTempText, mHighTempObject, bounds);
             float highTempYOffset = calcHighTempYOffset(mWeatherIcon, bounds);
-            canvas.drawText(mHighTempText,
-                    highTempXOffset,
-                    highTempYOffset,
-                    mHighTempObject);
+            canvas.drawText(mHighTempText, highTempXOffset, highTempYOffset, mHighTempObject);
 
-            // TODO Low Temp
             float lowTempXOffset = calcLowTempXOffset(mWeatherIcon, mLowTempText, mLowTempObject, bounds);
             float lowTempYOffset = calcLowTempYOffset(mWeatherIcon, bounds);
-            canvas.drawText(mLowTempText,
-                    lowTempXOffset,
-                    lowTempYOffset,
-                    mLowTempObject);
+            canvas.drawText(mLowTempText, lowTempXOffset, lowTempYOffset, mLowTempObject);
         }
     }
 
@@ -216,60 +204,30 @@ public class SunshineWatchFace implements
         mTimeText = new SimpleDateFormat(TIME_FORMAT).format(Calendar.getInstance().getTime());
     }
 
-    public  void updateWeatherConditions() {
-        Log.d(TAG, "updateWeatherConditions");
-    }
-
-//    private static int getIconResourceForWeatherCondition(int weatherId) {
-//        // Based on weather code data found at:
-//        // http://bugs.openweathermap.org/projects/api/wiki/Weather_Condition_Codes
-//        if (weatherId >= 200 && weatherId <= 232) {
-//            return R.drawable.ic_storm;
-//        } else if (weatherId >= 300 && weatherId <= 321) {
-//            return R.drawable.ic_light_rain;
-//        } else if (weatherId >= 500 && weatherId <= 504) {
-//            return R.drawable.ic_rain;
-//        } else if (weatherId == 511) {
-//            return R.drawable.ic_snow;
-//        } else if (weatherId >= 520 && weatherId <= 531) {
-//            return R.drawable.ic_rain;
-//        } else if (weatherId >= 600 && weatherId <= 622) {
-//            return R.drawable.ic_snow;
-//        } else if (weatherId >= 701 && weatherId <= 761) {
-//            return R.drawable.ic_fog;
-//        } else if (weatherId == 761 || weatherId == 781) {
-//            return R.drawable.ic_storm;
-//        } else if (weatherId == 800) {
-//            return R.drawable.ic_clear;
-//        } else if (weatherId == 801) {
-//            return R.drawable.ic_light_clouds;
-//        } else if (weatherId >= 802 && weatherId <= 804) {
-//            return R.drawable.ic_cloudy;
-//        }
-//        return -1;
-//    }
-    
     private static int getIconResourceForWeatherCondition(int weatherId) {
         // Based on weather code data found at:
         // http://bugs.openweathermap.org/projects/api/wiki/Weather_Condition_Codes
-//        Log.d(TAG, "getIconResourceForWeatherCondition: " + weatherId );
-        if (weatherId >= 0 && weatherId <= 299) {
+        if (weatherId >= 200 && weatherId <= 232) {
             return R.drawable.ic_storm;
-        } else if (weatherId >= 300 && weatherId <= 399) {
+        } else if (weatherId >= 300 && weatherId <= 321) {
             return R.drawable.ic_light_rain;
-        } else if (weatherId >= 400 && weatherId <= 499) {
+        } else if (weatherId >= 500 && weatherId <= 504) {
             return R.drawable.ic_rain;
         } else if (weatherId == 511) {
             return R.drawable.ic_snow;
-        } else if (weatherId >= 500 && weatherId <= 599) {
+        } else if (weatherId >= 520 && weatherId <= 531) {
             return R.drawable.ic_rain;
-        } else if (weatherId >= 600 && weatherId <= 699) {
+        } else if (weatherId >= 600 && weatherId <= 622) {
             return R.drawable.ic_snow;
-        } else if (weatherId >= 700 && weatherId <= 799) {
+        } else if (weatherId >= 701 && weatherId <= 761) {
             return R.drawable.ic_fog;
-        } else if (weatherId == 800 || weatherId == 899) {
+        } else if (weatherId == 761 || weatherId == 781) {
             return R.drawable.ic_storm;
-        } else if (weatherId >= 900 && weatherId <= 999) {
+        } else if (weatherId == 800) {
+            return R.drawable.ic_clear;
+        } else if (weatherId == 801) {
+            return R.drawable.ic_light_clouds;
+        } else if (weatherId >= 802 && weatherId <= 804) {
             return R.drawable.ic_cloudy;
         }
         return -1;
@@ -302,36 +260,29 @@ public class SunshineWatchFace implements
     public void onConnectionFailed(ConnectionResult connectionResult) { }
 
     private void setWeatherData(DataItem item) {
-        Log.d(TAG, "setWeatherData()");
+        Log.d(TAG, "setWeatherData()" + item.toString());
         String highTemp = "";
         String lowTemp = "";
         int weatherId = 0;
 
         if ((item.getUri().getPath()).equals("/weather_data")) {
             DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
-
             if (dataMap.containsKey("high_temp")) {
                 highTemp = dataMap.get("high_temp");
-                Log.d(TAG, "highTemp:" + mHighTempText);
             }
             if (dataMap.containsKey("low_temp")) {
                 lowTemp = dataMap.get("low_temp");
-                Log.d(TAG, "lowTemp:" + mLowTempText);
             }
             if (dataMap.containsKey("weather_id")) {
                 weatherId = dataMap.getInt("weather_id");
-                Log.d(TAG, "weather_id:" + mWeatherId);
             }
+            mSharedPreferences.edit()
+                    .putString("high_temp", highTemp)
+                    .putString("low_temp", lowTemp)
+                    .putInt("weather_id", weatherId)
+                    .apply();
         }
-        mSharedPreferences.edit()
-                .putString("high_temp", highTemp)
-                .putString("low_temp", lowTemp)
-                .putInt("weather_id", weatherId)
-                .apply();
-    }
 
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        Log.d(TAG, "onSharedPreferenceChanged");
+
     }
 }

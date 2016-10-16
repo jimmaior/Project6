@@ -37,7 +37,6 @@ public class WearableDataLayerService extends Service implements
     private static String mLowTemp;
     private static String mHighTemp;
     private static int mWeatherId;
-    private static Bitmap mWeatherConditionBitmap;
 
     public WearableDataLayerService() {
     }
@@ -106,8 +105,6 @@ public class WearableDataLayerService extends Service implements
     }
 
     private void getDataFromProvider() {
-        // TODO: get data from provider
-
         String[] forecastCols = {
                 WeatherContract.WeatherEntry.TABLE_NAME + "." + WeatherContract.WeatherEntry._ID,
                 WeatherContract.WeatherEntry.COLUMN_DATE,
@@ -125,42 +122,23 @@ public class WearableDataLayerService extends Service implements
                 location, System.currentTimeMillis());
         Cursor cursor = getContentResolver().query(weatherForLocationUri, forecastCols, null,
                 null, WeatherContract.WeatherEntry.COLUMN_DATE + " ASC");
-        // debug cursor
-        cursor.moveToLast();
-        Log.d(TAG, DatabaseUtils.dumpCurrentRowToString(cursor));
 
         if (cursor != null) {
-//            cursor.moveToLast();
-//            double low = cursor.getDouble(4);
-//            String lowString = Utility.formatTemperature(getApplicationContext(), low);
-//            mLowTemp = lowString;
-//
-//            double high = cursor.getDouble(3);
-//            String highString = Utility.formatTemperature(getApplicationContext(), high);
-//            mHighTemp = highString;
-//
-//            int weatherId = cursor.getInt(6);
-//            mWeatherId = weatherId;
-//
-//            int resource = Utility.getIconResourceForWeatherCondition(weatherId);
-//            mWeatherConditionBitmap = BitmapFactory.decodeResource(getResources(), resource);
+            cursor.moveToLast();
+
+            double low = cursor.getDouble(4);
+            String lowString = Utility.formatTemperature(getApplicationContext(), low);
+            mLowTemp = lowString;
+
+            double high = cursor.getDouble(3);
+            String highString = Utility.formatTemperature(getApplicationContext(), high);
+            mHighTemp = highString;
+
+            int weatherId = cursor.getInt(6);
+            mWeatherId = weatherId;
 
             cursor.close();
         }
-
-        mHighTemp = randomTemp();
-        mLowTemp = randomTemp();
-        mWeatherId = randomId();
-  }
-
-    private String randomTemp() {
-        Random randomGenerator = new Random();
-        return String.valueOf(randomGenerator.nextInt(100));
-    }
-
-    private int randomId() {
-        Random randomGenerator = new Random();
-        return randomGenerator.nextInt(1000);
     }
 
     private void sendWeatherDataToDataLayer() {
@@ -172,8 +150,6 @@ public class WearableDataLayerService extends Service implements
         new syncWeatherConditionChange(dataMap).start();
     }
 
-
-    // TODO: Rename
     private class syncWeatherConditionChange extends Thread {
         DataMap mDataMap;
 
@@ -198,6 +174,5 @@ public class WearableDataLayerService extends Service implements
             // terminate the service
             stopSelf();
         }
-
     }
 }

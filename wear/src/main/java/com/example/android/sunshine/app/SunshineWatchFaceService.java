@@ -55,14 +55,10 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         return new SunshineWatchFaceServiceEngine();
     }
 
-    private class SunshineWatchFaceServiceEngine extends CanvasWatchFaceService.Engine
-            implements
-        GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener {
+    private class SunshineWatchFaceServiceEngine extends CanvasWatchFaceService.Engine {
 
         private final String TAG = CanvasWatchFaceService.Engine.class.getSimpleName();
 
-        private GoogleApiClient mGoogleApiClient;
         private SunshineWatchFace mWatchFace;
         private Handler mClockTick;
 
@@ -80,21 +76,12 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
                     .setShowSystemUiTime(false)
                     .build());
 
-            /* client for retrieving synch data from the Wearable Data Layer */
-            mGoogleApiClient = new GoogleApiClient.Builder(SunshineWatchFaceService.this)
-                    .addApi(Wearable.API)
-                    .addConnectionCallbacks(this)
-                    .addOnConnectionFailedListener(this)
-                    .build();
-
             mClockTick = new Handler(Looper.myLooper());
-            startTimerIfNecessary();
-
             mWatchFace = SunshineWatchFace.newInstance(SunshineWatchFaceService.this);
+            startTimerIfNecessary();
         }
 
         private void startTimerIfNecessary() {
- //           Log.d(TAG, "startTimeIfNecessary");
             mClockTick.removeCallbacks(timeRunnable);
             if (isVisible() && !isInAmbientMode()) {
                 mClockTick.post(timeRunnable);
@@ -151,10 +138,6 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         private void registerWeatherConditionsReceiver() {
             Log.d(TAG, "registerWeatherConditionsReceiver");
             IntentFilter filter = new IntentFilter("com.example.android.sunshine.app.INTENT");
-//            LocalBroadcastManager.getInstance(getApplicationContext())
-//                    .registerReceiver(weatherConditionsChangedReceiver,
-//                            filter);
-            // TODO context.  whats the difference between getApplicationContext and getBaseContext
             LocalBroadcastManager.getInstance(getApplicationContext())
                     .registerReceiver(weatherConditionsChangedReceiver,
                             filter);
@@ -169,24 +152,12 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         private  BroadcastReceiver weatherConditionsChangedReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Log.d(TAG, "onReceive()- weather condition data");
-                Log.d(TAG, intent.getAction());
+                Log.d(TAG, "onReceive()- weather condition data: " + intent.getAction());
                 if ("com.example.android.sunshine.app.INTENT".equals(intent.getAction())) {
-                    Bundle data = intent.getBundleExtra("datamap");
-                    updateWeatherData(data);
+                    invalidate();
                 }
             }
         };
-
-        private void updateWeatherData(Bundle data) {
-            String display = "Received from the data Layer\n" +
-                    "low temp: " + data.getString("low_temp") + "\n" +
-                    "high temp: " + data.getString("high_temp") + "\n" +
-                    "weather icon: " + String.valueOf(data.getInt("weather_id") );
-            Log.d(TAG, display);
-            invalidate();
-           // mWatchFace.updateWeatherConditions();
-        }
 
         private BroadcastReceiver timeZoneChangedReceiver = new BroadcastReceiver() {
             @Override
@@ -231,63 +202,5 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             mClockTick.removeCallbacks(timeRunnable);
             super.onDestroy();
         }
-
-        @Override
-        public void onConnected(Bundle bundle) {
-            Log.d(TAG, "onConnected");
-            Wearable.DataApi
-                    .getDataItems(mGoogleApiClient)
-                    .setResultCallback(onConnectedResultCallback);
-        }
-
-        private final ResultCallback<DataItemBuffer>
-                onConnectedResultCallback = new ResultCallback<DataItemBuffer>() {
-                    @Override
-                    public void onResult(DataItemBuffer dataItems) {
-                        Log.d(TAG, "onResult");
-                        for (DataItem item : dataItems) {
-                            getWeatherData(item);
-                        }
-                        dataItems.release();
-                        if (isVisible() && !isInAmbientMode()) {
-                            invalidate();
-                        }
-                    }
-                };
-
-        private void getWeatherData(DataItem item) {
-            Log.d(TAG, "getWeatherData()");
-//
-//            if ((item.getUri().getPath()).equals("/weather_data")) {
-//                DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
-//                // TODO update the watch face
-//                if (dataMap.containsKey("high_temp")) {
-//                    mHighTemp = dataMap.get("high_temp");
-//                    Log.d(TAG, "highTemp:" + mHighTemp);
-//                }
-//                if (dataMap.containsKey("low_temp")) {
-//                    mLowTemp = dataMap.get("low_temp");
-//                    Log.d(TAG, "lowTemp:" + mLowTemp);
-//                }
-//                if (dataMap.containsKey("weather_icon")) {
-//                    mWeatherId = dataMap.getInt("weather_icon");
-//                    Log.d(TAG, "weather id:" + mWeatherId);
-//                }
-//                 invalidate();
-//            }
-        }
-
-        @Override
-        public void onConnectionSuspended(int i) { }
-
-        @Override
-        public void onConnectionFailed(ConnectionResult connectionResult) { }
-
-//        @Override
-//        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-//            Log.d(TAG, "onSharedPreferenceChanged");
-//        }
     }
-
-
 }
