@@ -20,6 +20,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Rect;
@@ -89,13 +90,11 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             mClockTick = new Handler(Looper.myLooper());
             startTimerIfNecessary();
 
-            // WatchFace Data
-            //mWatchFace = SunshineWatchFace.newInstance(SunshineWatchFaceService.this);
             mWatchFace = SunshineWatchFace.newInstance(SunshineWatchFaceService.this);
         }
 
         private void startTimerIfNecessary() {
-            Log.d(TAG, "startTimeIfNecessary");
+ //           Log.d(TAG, "startTimeIfNecessary");
             mClockTick.removeCallbacks(timeRunnable);
             if (isVisible() && !isInAmbientMode()) {
                 mClockTick.post(timeRunnable);
@@ -129,12 +128,10 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             Log.d(TAG, "onVisibilityChanged()");
             super.onVisibilityChanged(visible);
             if (visible) {
-  //           mGoogleApiClient.connect();
                 registerTimeZoneReceiver();
                 registerWeatherConditionsReceiver();
             }
             else {
-  //             mGoogleApiClient.disconnect();
                 unregisterTimeZoneReceiver();
                 unregisterWeatherConditionsReceiver();
             }
@@ -185,9 +182,10 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             String display = "Received from the data Layer\n" +
                     "low temp: " + data.getString("low_temp") + "\n" +
                     "high temp: " + data.getString("high_temp") + "\n" +
-                    "weather icon: " + String.valueOf(data.getInt("weather_icon") );
+                    "weather icon: " + String.valueOf(data.getInt("weather_id") );
             Log.d(TAG, display);
-            mWatchFace.updateWeatherConditions();
+            invalidate();
+           // mWatchFace.updateWeatherConditions();
         }
 
         private BroadcastReceiver timeZoneChangedReceiver = new BroadcastReceiver() {
@@ -219,9 +217,9 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
             mWatchFace.setAntiAlias(!inAmbientMode);
 
             if (!inAmbientMode) {
-                mWatchFace.setColor(Color.RED, Color.GREEN, Color.WHITE);
+                mWatchFace.setColor(Color.GREEN, Color.WHITE);
             }
-            else mWatchFace.setColor(Color.GRAY, Color.GRAY, Color.GRAY);
+            else mWatchFace.setColor(Color.GRAY, Color.GRAY);
             invalidate();
             startTimerIfNecessary();
 
@@ -285,5 +283,11 @@ public class SunshineWatchFaceService extends CanvasWatchFaceService {
         @Override
         public void onConnectionFailed(ConnectionResult connectionResult) { }
 
+//        @Override
+//        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+//            Log.d(TAG, "onSharedPreferenceChanged");
+//        }
     }
+
+
 }

@@ -1,6 +1,7 @@
 package com.example.android.sunshine.app;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -9,6 +10,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 
@@ -31,7 +33,8 @@ import java.util.TimeZone;
 
 public class SunshineWatchFace implements
         GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener {
+        GoogleApiClient.OnConnectionFailedListener,
+        SharedPreferences.OnSharedPreferenceChangeListener {
 
     private static final String TAG = SunshineWatchFace.class.getSimpleName();
 
@@ -50,6 +53,7 @@ public class SunshineWatchFace implements
     private static int mWeatherId = 0;
 
     private Resources mAppResources;
+    private SharedPreferences mSharedPreferences;
 
     private static final String TIME_FORMAT = "kk:mm";
     private static final String DATE_FORMAT = "MMMM dd";
@@ -77,14 +81,17 @@ public class SunshineWatchFace implements
     }
 
     private SunshineWatchFace(Context context, Paint objTime, Paint objDate, Paint objLowTemp, Paint objHighTemp) {
-            this.mTimeObject = objTime;
-            this.mDateObject = objDate;
-            this.mLowTempObject = objLowTemp;
-            this.mHighTempObject = objHighTemp;
+        this.mTimeObject = objTime;
+        this.mDateObject = objDate;
+        this.mLowTempObject = objLowTemp;
+        this.mHighTempObject = objHighTemp;
 
-            mAppResources = context.getResources();
+        mAppResources = context.getResources();
+        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 
-               /* client for retrieving synch data from the Wearable Data Layer */
+        mSharedPreferences.registerOnSharedPreferenceChangeListener(this);
+
+       /* client for retrieving synch data from the Wearable Data Layer */
         mGoogleApiClient = new GoogleApiClient.Builder(context)
                 .addApi(Wearable.API)
                 .addConnectionCallbacks(this)
@@ -98,6 +105,10 @@ public class SunshineWatchFace implements
         canvas.drawColor(Color.BLACK);
         mTimeText = new SimpleDateFormat(TIME_FORMAT).format(Calendar.getInstance().getTime());
         mDateText = new SimpleDateFormat(DATE_FORMAT).format(Calendar.getInstance().getTime());
+
+        mHighTempText = mSharedPreferences.getString("high_temp", "");
+        mLowTempText = mSharedPreferences.getString("low_temp", "");
+        mWeatherId = mSharedPreferences.getInt("weather_id", 0);
 
         // Date
         float dateXOffset = calcXOffset(mDateText, mDateObject, bounds);
@@ -122,7 +133,7 @@ public class SunshineWatchFace implements
 
             // TODO High Temp
             float highTempXOffset = calcHighTempXOffset(mWeatherIcon, mHighTempText, mHighTempObject, bounds);
-            float highTempYOffset = calcHighTempYOffset(mWeatherIcon, mHighTempText, mHighTempObject, bounds);
+            float highTempYOffset = calcHighTempYOffset(mWeatherIcon, bounds);
             canvas.drawText(mHighTempText,
                     highTempXOffset,
                     highTempYOffset,
@@ -130,7 +141,7 @@ public class SunshineWatchFace implements
 
             // TODO Low Temp
             float lowTempXOffset = calcLowTempXOffset(mWeatherIcon, mLowTempText, mLowTempObject, bounds);
-            float lowTempYOffset = calcLowTempYOffset(mWeatherIcon, mLowTempText, mLowTempObject, bounds);
+            float lowTempYOffset = calcLowTempYOffset(mWeatherIcon, bounds);
             canvas.drawText(mLowTempText,
                     lowTempXOffset,
                     lowTempYOffset,
@@ -145,7 +156,7 @@ public class SunshineWatchFace implements
         return centerX + weatherIcon.getHeight()/2;
     }
 
-    private float calcHighTempYOffset(Bitmap weatherIcon, String temp, Paint paint, Rect watchBounds) {
+    private float calcHighTempYOffset(Bitmap weatherIcon, Rect watchBounds) {
         float centerY = watchBounds.exactCenterY();
         return centerY + weatherIcon.getHeight()/1.5f;
     }
@@ -157,7 +168,7 @@ public class SunshineWatchFace implements
         return centerX + weatherIcon.getHeight()/2;
     }
 
-    private float calcLowTempYOffset(Bitmap weatherIcon, String temp, Paint paint, Rect watchBounds) {
+    private float calcLowTempYOffset(Bitmap weatherIcon, Rect watchBounds) {
         float centerY = watchBounds.exactCenterY();
         return centerY + (1.2f * weatherIcon.getHeight());
     }
@@ -192,7 +203,7 @@ public class SunshineWatchFace implements
     }
 
     // Set each of our objects colors
-    public void setColor(int red, int green, int white) {
+    public void setColor(int green, int white) {
         mTimeObject.setColor(green);
         mDateObject.setColor(white);
     }
@@ -278,7 +289,7 @@ public class SunshineWatchFace implements
         public void onResult(DataItemBuffer dataItems) {
             Log.d(TAG, "onResult");
             for (DataItem item : dataItems) {
-                getWeatherData(item);
+                setWeatherData(item);
             }
             dataItems.release();
         }
@@ -290,25 +301,37 @@ public class SunshineWatchFace implements
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) { }
 
-    private void getWeatherData(DataItem item) {
-        Log.d(TAG, "getWeatherData()");
+    private void setWeatherData(DataItem item) {
+        Log.d(TAG, "setWeatherData()");
+        String highTemp = "";
+        String lowTemp = "";
+        int weatherId = 0;
 
         if ((item.getUri().getPath()).equals("/weather_data")) {
             DataMap dataMap = DataMapItem.fromDataItem(item).getDataMap();
-            // TODO update the watch face
+
             if (dataMap.containsKey("high_temp")) {
-                mHighTempText = dataMap.get("high_temp");
+                highTemp = dataMap.get("high_temp");
                 Log.d(TAG, "highTemp:" + mHighTempText);
             }
             if (dataMap.containsKey("low_temp")) {
-                mLowTempText = dataMap.get("low_temp");
+                lowTemp = dataMap.get("low_temp");
                 Log.d(TAG, "lowTemp:" + mLowTempText);
             }
-            if (dataMap.containsKey("weather_icon")) {
-                mWeatherId = dataMap.getInt("weather_icon");
-
-                Log.d(TAG, "weather id:" + mWeatherId);
+            if (dataMap.containsKey("weather_id")) {
+                weatherId = dataMap.getInt("weather_id");
+                Log.d(TAG, "weather_id:" + mWeatherId);
             }
         }
+        mSharedPreferences.edit()
+                .putString("high_temp", highTemp)
+                .putString("low_temp", lowTemp)
+                .putInt("weather_id", weatherId)
+                .apply();
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        Log.d(TAG, "onSharedPreferenceChanged");
     }
 }

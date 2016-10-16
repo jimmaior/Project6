@@ -166,7 +166,7 @@ public class WearableDataLayerService extends Service implements
     private void sendWeatherDataToDataLayer() {
         Log.d(TAG, "sendWeatherDataToDataLayer()");
         DataMap dataMap = new DataMap();
-        dataMap.putInt("weather_icon", mWeatherId );
+        dataMap.putInt("weather_id", mWeatherId );
         dataMap.putString("low_temp", mLowTemp);
         dataMap.putString("high_temp", mHighTemp);
         new syncWeatherConditionChange(dataMap).start();

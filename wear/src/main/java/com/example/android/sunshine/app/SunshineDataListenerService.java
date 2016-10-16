@@ -17,6 +17,8 @@ import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.MessageEvent;
 import com.google.android.gms.wearable.WearableListenerService;
 
+import java.util.Random;
+
 public class SunshineDataListenerService extends WearableListenerService {
     public SunshineDataListenerService() {
     }
@@ -41,6 +43,15 @@ public class SunshineDataListenerService extends WearableListenerService {
                 String path = event.getDataItem().getUri().getPath();
                 if (path.equals(WEATHER_DATA_PATH)) {}
                 dataMap = DataMapItem.fromDataItem(event.getDataItem()).getDataMap();
+
+                SharedPreferences sharedPrefs = PreferenceManager
+                        .getDefaultSharedPreferences(this);
+                sharedPrefs.edit()
+                        .putString("high_temp", dataMap.getString("high_temp"))
+                        .putString("low_temp", dataMap.getString("low_temp"))
+                        .putInt("weather_id", dataMap.getInt("weather_id"))
+                        .apply();
+
                 Intent messageIntent = new Intent();
                 messageIntent.setAction("com.example.android.sunshine.app.INTENT");
                 messageIntent.putExtra("datamap", dataMap.toBundle());
@@ -49,9 +60,14 @@ public class SunshineDataListenerService extends WearableListenerService {
         }
     }
 
-    private void saveWeatherConditions() {
-        SharedPreferences sharedPrefs = PreferenceManager
-                .getDefaultSharedPreferences(this);
-
-    }
+//    private void setWeatherConditions() {
+//        Log.d(TAG, "setWeatherConditions");
+//        SharedPreferences sharedPrefs = PreferenceManager
+//                .getDefaultSharedPreferences(this);
+//        sharedPrefs.edit()
+//                .putString("high_temp", randomTemp())
+//                .putString("low_temp", randomTemp())
+//                .putInt("weather_id", randomId())
+//                .apply();
+//    }
 }
